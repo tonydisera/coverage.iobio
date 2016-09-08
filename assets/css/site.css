@@ -54,7 +54,21 @@ a {
   right: 5px;
   background-color: white;
   margin-bottom: 6px;
-  top: 0px; }
+  top: 0px;}
+
+#gene-summary {
+  margin-top: 75px;
+  border: 1px solid #717171;
+  padding: 10px;
+  width: 100%;
+  float: left;
+}
+
+#chart-section {
+  border: 1px solid #717171;
+  padding: 10px;
+  width: 100%;
+}
 
 .nav-stretch {
   position: relative; }
@@ -70,8 +84,66 @@ a {
 .shadow-z-2 {
   box-shadow: 0px 1px 6px rgba(0, 0, 0, 0.17), 0px 1px 6px rgba(0, 0, 0, 0.17); }
 
- .fixed {
+.box{
+  padding: 10px;
+  outline: 1px;
+}
+.fixed {
   left: 6px; }
+
+  div.bar {
+    display: inline-block;
+    width: 20px;
+    height: 75px;
+    background-color: teal;
+  }
+
+  .xaxis path,
+  .xaxis line {
+    fill: none;
+    stroke: black;
+    shape-rendering: crispEdges;
+  }
+
+  .xaxis text {
+    font-family: sans-serif;
+    font-size: 11px;
+  }
+  .yaxis path,
+  .yaxis line {
+    fill: none;
+    stroke: black;
+    shape-rendering: crispEdges;
+  }
+
+  .yaxis text {
+    font-family: sans-serif;
+    font-size: 11px;
+  }
+
+  table {
+    table-layout: auto;
+    font-family: "Quattrocento Sans", sans-serif, sans-serif ;
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  td, th {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 8px;
+      white-space:nowrap;
+  }
+
+  table td.absorbing-column {
+      width: 100%;
+  }
+
+  tr:nth-child(even) {
+      background-color: #dddddd;
+      white-space:nowrap;
+
+  }
 
 .push {
   transition: all 0.6s ease;
@@ -79,4 +151,4 @@ a {
   -moz-transition: all 0.6s ease;
   -ms-transition: all 0.6s ease;
   -o-transition: all 0.6s ease;
-  z-index: 1; } 
+  z-index: 1; }

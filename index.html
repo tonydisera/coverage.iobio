@@ -7,75 +7,128 @@
     <title>coverage.iobio</title>
 
     <!-- Libraries -->
-    <script src="assets/js/jquery.1.11.1.min.js"></script> 
+    <script src="assets/js/jquery.1.11.1.min.js"></script>
     <script src="assets/js/handlebars-v2.0.0.min.js"></script>
-    <script src="assets/js/bootstrap.min.js"></script>    
-    <script src="assets/js/d3.min.js"></script>  
+    <script src="assets/js/bootstrap.min.js"></script>
+    <script src="assets/js/d3.min.js"></script>
 
     <!-- Site stylesheets -->
     <link rel="stylesheet" href="assets/css/site.css"/>
-    
-    <style type="text/css">
-      div.bar {
-        display: inline-block;
-        width: 20px;
-        height: 75px;
-        background-color: teal;
-      }
 
-      .xaxis path,
-      .xaxis line {
-        fill: none;
-        stroke: black;
-        shape-rendering: crispEdges;
-      }
+    <!-- bootstrap -->
+    <link rel="stylesheet" href="assets/css/bootstrap.css">
 
-      .xaxis text {
-        font-family: sans-serif;
-        font-size: 11px;
-      }
-      .yaxis path,
-      .yaxis line {
-        fill: none;
-        stroke: black;
-        shape-rendering: crispEdges;
-      }
 
-      .yaxis text {
-        font-family: sans-serif;
-        font-size: 11px;
-      }
-
-      #chart-section {
-        margin-top: 75px;
-      }
-
-      .box
-    </style>
   </head>
   <body>
-      <div id="nav-section" class="fixed shadow-z-2">
-        <section id="app-title-section" class="nav-stretch">
+    <!-- var chartTypeEnum = {
+      geneChart:1,
+      exonChart:2
+    }; -->
+    <!-- Nav bar at the top -->
+    <div id="nav-section" class="fixed">
+      <section id="app-title-section" class="nav-stretch">
 
-          <!-- Project title -->
-          <div class="nav-left">
-            <a id='home' style="display:inline-block;width:190px;href="/">
-              <span class="iobioapp">coverage</span><span class="iobio">.iobio</span>
-            </a>
-          </div>
-          <!--<a href="javascript:void(0)" id="app-disclaimer-link-left" class="level-edu"  onclick="$('#disclaimer-modal').modal('show')">
-             Disclaimer
-          </a>-->
+        <!-- Project title -->
+        <div class="nav-left">
+          <a id='home' style="display:inline-block;width:190px;href="/">
+            <span class="iobioapp">coverage</span><span class="iobio">.iobio</span>
+          </a>
+        </div>
+        <!--<a href="javascript:void(0)" id="app-disclaimer-link-left" class="level-edu"  onclick="$('#disclaimer-modal').modal('show')">
+           Disclaimer
+        </a>-->
 
-          <!-- iobio project link -->
-          <div class="nav-right">
-            <a href="http://iobio.io" class="iobioproject">an iobio project</a>
-          </div>
-        </section>
+        <!-- iobio project link -->
+        <div class="nav-right">
+          <a target="_blank" href="http://iobio.io" class="iobioproject">an iobio project</a>
+        </div>
+      </section>
+    </div>
+
+    <div id="gene-summary" style='display:table'>
+      <div style='display:table-cell';width:50%'>
+        <table id = "gene-table">
+            <th>GENE</th>
+            <th>MEAN</th>
+            <th>SD</th>
+            <th>MIN</th>
+            <th>STATUS</th>
+          </tr>
+          <!-- <tr>
+          <tr>
+            <td>ACTA2</td>
+            <td>63.78</td>
+            <td>8.22</td>
+            <td>58</td>
+            <td>PASS</td>
+          </tr>
+          <tr>
+            <td>ACTA1</td>
+            <td>74.78</td>
+            <td>4.25</td>
+            <td>58</td>
+            <td>PASS</td>
+          </tr>
+          <tr>
+            <td>APC</td>
+            <td>21.88</td>
+            <td>12.31</td>
+            <td>1</td>
+            <td>FAIL</td>
+          </tr>
+          <tr>
+            <td>APOB</td>
+            <td>62.99</td>
+            <td>8.01</td>
+            <td>49</td>
+            <td>PASS</td>
+          </tr> -->
+        </table>
+      </div>
+      <div style='display:table-cell';width:50%'>
+        <p>PUT PIE CHARTS HERE</p>
       </div>
 
-      <div id="chart-section">
+    </div>
+
+    <div id="test1" style="box">
+      <div id="gene-section">
       </div>
+    </div>
+
+    <div id="test2" style='display:table'>
+      <div id = "exon-section" style='display:table-cell';width:50%'>
+      </div>
+      <div id = "selected-genes" style='display:table-cell';width:50%'>
+        <table>
+          <tr>
+            <th>GENE</th>
+            <th>MEAN</th>
+            <th>SD</th>
+            <th>MIN</th>
+          </tr>
+          <tr>
+            <td>ACTA2</td>
+            <td>63.78</td>
+            <td>8.22</td>
+            <td>58</td>
+          </tr>
+          <tr>
+            <td>ACTA1</td>
+            <td>74.78</td>
+            <td>4.25</td>
+            <td>58</td>
+          </tr>
+          <tr>
+            <td>APC</td>
+            <td>21.88</td>
+            <td>12.31</td>
+            <td>1</td>
+          </tr>
+        </table>
+      </div>
+    </div>
   </body>
 
     <script type="text/javascript">
@@ -86,39 +139,53 @@ var h = 300;
 var w = 500;
 var padding = 25;
 
-var geneSvg = new chart();
-var exonSvg = new chart();
+
+var geneSvg = new chart("gene");
+var exonSvg = new chart("exon");
 var dataset = [];
 var newData = [
   "#id\tregion\tmin max q1\tmedian\tq3\tmean\tsd",
-"1\t10:90694980-90695123\t24\t42\t28\t36\t38\t34.4615 5.59941",
-"2\t10:90697818-90697999\t16\t36\t20\t24\t32\t25.7238 5.97795",
-"3\t10:90699264-90699455\t10\t29\t16\t23\t26\t21.2356 5.66166",
-"4\t10:90700986-90701147\t17\t27\t22\t23\t24\t22.8447 2.23623",
-"5\t10:90701542-90701626\t14\t19\t15\t17\t18\t16.8333 1.72401",
-"6\t10:90703554-90703664\t21\t44\t27\t33\t38\t32.9182 6.60596",
-"7\t10:90707015-90707143\t16\t27\t19\t22.5\t25\t21.7188 3.21116",
-"8\t10:90708559-90708687\t14\t34\t17.5\t20\t28\t22.3047 5.90757",
-"gene NA\t10\t44\t19\t24\t28\t24.8561 7.29064"
+"1\t10:90694980-90695123\t24\t42\t28\t36\t38\t34.4615\t5.59941",
+"2\t10:90697818-90697999\t16\t36\t20\t24\t32\t25.7238\t5.97795",
+"3\t10:90699264-90699455\t10\t29\t16\t23\t26\t21.2356\t5.66166",
+"4\t10:90700986-90701147\t17\t27\t22\t23\t24\t22.8447\t2.23623",
+"5\t10:90701542-90701626\t14\t19\t15\t17\t18\t16.8333\t1.72401",
+"6\t10:90703554-90703664\t21\t44\t27\t33\t38\t32.9182\t6.60596",
+"7\t10:90707015-90707143\t16\t27\t19\t22.5\t25\t21.7188\t3.21116",
+"8\t10:90708559-90708687\t14\t34\t17.5\t20\t28\t22.3047\t5.90757",
+"gene\tGENE1\t10\t44\t19\t24\t28\t24.8561\t7.29064"
 ];
 
 var geneData = [];
 var exonData = [];
 var dataId   = 0;
 
+function updateGeneTable(geneData){
+  var currGene = geneData[geneData.length - 1];
+  $('#gene-table tr:last').after('<tr><td>'+currGene.name+
+    '</td><td>'+currGene.mean+
+      '<td>'+currGene.sd+
+      '<td>'+currGene.min+
+      '<td>'+'NA'+
+      '</td></tr>');
+}
+
 $(document).ready(function() {
-      
 
       // Trim the first line from the data.
       newData.shift();
 
       // Get all exon and gene level stats.
 
-      geneData.push(getGeneData(newData, dataId, "ACTA2"));
-      exonData.push(getExonData(newData, dataId, "ACTA2"));
+      //geneData.push(getGeneData(newData, dataId, "ACTA2"));
+      //exonData.push(getExonData(newData, dataId, "ACTA2"));
+      geneData.push(getGeneData(newData, dataId));
+      exonData.push(getExonData(newData, dataId));
       console.log("TEST", exonData);
       exonData[dataId].push(geneData[dataId]);
       console.log("TEST", exonData);
+
+      //updateGeneTable(geneData);
 
       // Set initial scales.
       geneSvg.xScale = setScale(0, geneData.length, 0, w);
@@ -160,20 +227,23 @@ $(document).ready(function() {
 
       // New datasets
       newData = [
-        "#id\tregion\tmin max q1\tmedian\tq3\tmean\tsd",
+        "#id\tregion\tmin\tmax\tq1\tmedian\tq3\tmean\tsd",
         "1\t15:35082613-35082756\t14\t24\t16\t19\t22\t19.035\t3.14768",
         "2\t15:35083315-35083496\t24\t40\t28\t32\t35\t31.884\t4.12147",
         "3\t15:35084291-35084482\t24\t34\t27\t28\t30\t28.2094\t2.29685",
         "4\t15:35084609-35084770\t17\t34\t19\t23\t28.25\t23.6398\t4.92875",
         "5\t15:35085446-35085770\t26\t37\t31\t33\t34\t32.1327\t2.33947",
         "6\t15:35086881-35087009\t13\t24\t15\t18\t20\t17.8203\t2.60238",
-        "gene\tNA\t13\t40\t21\t28\t32\t26.9317\t6.44492"
+        "gene\tACTC1\t13\t40\t21\t28\t32\t26.9317\t6.44492"
       ];
       setTimeout(function() {
         newData.shift();
         dataId++;
-        geneData.push(getGeneData(newData, dataId, 'ACTC1'));
-        exonData.push(getExonData(newData, dataId, 'ACTC1'));
+        //geneData.push(getGeneData(newData, dataId, 'ACTC1'));
+        //exonData.push(getExonData(newData, dataId, 'ACTC1'));
+        geneData.push(getGeneData(newData, dataId));
+        exonData.push(getExonData(newData, dataId));
+        //updateGeneTable(geneData);
         drawGene(geneSvg, geneData)
       }, 1000);
 
@@ -195,12 +265,15 @@ $(document).ready(function() {
           "13\t5:112164553-112164669\t20\t29\t25\t27\t28\t26.3362\t2.44577",
           "14\t5:112170648-112170862\t14\t20\t16\t17\t17\t16.972\t1.42053",
           "15\t5:112173250-112179823\t8\t52\t19\t23\t27\t24.0571\t7.18038",
-          "gene\tNA\t8\t52\t18\t22\t26\t22.8706\t7.08069"
+          "gene\tAPC\t8\t52\t18\t22\t26\t22.8706\t7.08069"
       ];
         newData.shift();
         dataId++;
+        //geneData.push(getGeneData(newData, dataId, "APC"));
+        //exonData.push(getExonData(newData, dataId, "APC"));
         geneData.push(getGeneData(newData, dataId, "APC"));
         exonData.push(getExonData(newData, dataId, "APC"));
+        //updateGeneTable(geneData);
         drawGene(geneSvg, geneData)
       }, 2000);
 });
@@ -267,7 +340,8 @@ function getExonData(dataset, id) {
 };
 
 // Get the gene level statistics.
-function getGeneData(dataset, id, name) {
+//function getGeneData(dataset, id, name) {
+function getGeneData(dataset, id) {
   var exon = new stats;
 
   // Define the gene min and max by the first and last exons.
@@ -281,7 +355,8 @@ function getGeneData(dataset, id, name) {
 
   s = dataset[dataset.length - 1].split("\t");
   exon.id     = id;
-  exon.name   = name;
+  //exon.name   = name;
+  exon.name   = (dataset[dataset.length - 1].split("\t")[1])
   exon.min    = parseInt(s[2]);
   exon.max    = parseInt(s[3]);
   exon.q1     = parseFloat(s[4]);
@@ -305,11 +380,21 @@ function setAxis(scale, position, ticks) {
 
 
 
-function chart() {
+function chart(x) {
   this.h = h;
   this.w = w;
   this.padding = padding;
-  this.svg = d3.select("#chart-section").append("svg").attr("height", this.h).attr("width", this.w);
+
+  <!-- this is bad practice, try to use enum as input here -->
+  if(x == "gene"){
+    this.svg = d3.select("#gene-section").append("svg").attr("height", this.h).attr("width", this.w);
+  }
+  else if (x == "exon"){
+    this.svg = d3.select("#exon-section").append("svg").attr("height", this.h).attr("width", this.w);
+  }
+  else{
+    <!-- throw error -->
+  }
   this.xScale;
   this.yScale;
   this.xAxis = d3.svg.axis();
