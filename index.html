@@ -55,35 +55,6 @@
             <th>MIN</th>
             <th>STATUS</th>
           </tr>
-          <!-- <tr>
-          <tr>
-            <td>ACTA2</td>
-            <td>63.78</td>
-            <td>8.22</td>
-            <td>58</td>
-            <td>PASS</td>
-          </tr>
-          <tr>
-            <td>ACTA1</td>
-            <td>74.78</td>
-            <td>4.25</td>
-            <td>58</td>
-            <td>PASS</td>
-          </tr>
-          <tr>
-            <td>APC</td>
-            <td>21.88</td>
-            <td>12.31</td>
-            <td>1</td>
-            <td>FAIL</td>
-          </tr>
-          <tr>
-            <td>APOB</td>
-            <td>62.99</td>
-            <td>8.01</td>
-            <td>49</td>
-            <td>PASS</td>
-          </tr> -->
         </table>
       </div>
       <div style='display:table-cell';width:50%'>
@@ -185,7 +156,7 @@ $(document).ready(function() {
       exonData[dataId].push(geneData[dataId]);
       console.log("TEST", exonData);
 
-      //updateGeneTable(geneData);
+      updateGeneTable(geneData);
 
       // Set initial scales.
       geneSvg.xScale = setScale(0, geneData.length, 0, w);
@@ -243,7 +214,7 @@ $(document).ready(function() {
         //exonData.push(getExonData(newData, dataId, 'ACTC1'));
         geneData.push(getGeneData(newData, dataId));
         exonData.push(getExonData(newData, dataId));
-        //updateGeneTable(geneData);
+        updateGeneTable(geneData);
         drawGene(geneSvg, geneData)
       }, 1000);
 
@@ -273,7 +244,7 @@ $(document).ready(function() {
         //exonData.push(getExonData(newData, dataId, "APC"));
         geneData.push(getGeneData(newData, dataId, "APC"));
         exonData.push(getExonData(newData, dataId, "APC"));
-        //updateGeneTable(geneData);
+        updateGeneTable(geneData);
         drawGene(geneSvg, geneData)
       }, 2000);
 });
