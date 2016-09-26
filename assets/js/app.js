@@ -43,6 +43,28 @@ function updateGeneTable(genedatatable,geneData){
   genedatatable.row.add([currGene.name, currGene.mean, currGene.sd, currGene.min]).draw();
 }
 
+function applyClick(){
+  var minFilter = document.getElementById("minCoverageField").value;
+
+  if(minFilter!=""){
+    var data = genedatatable.rows().data();
+
+    data.each(function (value, index) {
+      var minCoverage=value[3];
+      //console.log('Min coverage at index: ' + index + ' is: ' + minCoverage);
+
+      if(minCoverage<minFilter){
+        var newData = [value[0],value[1],value[2],value[3],"FAIL"]
+      }
+      else{
+        var newData = [value[0],value[1],value[2],value[3],"PASS"]
+      }
+      data.row( index ).data( newData ).draw();
+    });
+  }
+}
+
+var genedatatable;
 
 $(document).ready(function() {
 
@@ -50,7 +72,7 @@ $(document).ready(function() {
       // Trim the first line from the data.
       newData.shift();
 
-      var genedatatable = $('#gene-table-div').DataTable( {
+      genedatatable = $('#gene-table-div').DataTable( {
         "columnDefs": [{
             "defaultContent": "-",
             "targets": "_all"

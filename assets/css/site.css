@@ -121,7 +121,7 @@ a {
     font-size: 11px;
   }
 
-  table {
+/*  table {
     table-layout: auto;
     font-family: "Quattrocento Sans", sans-serif, sans-serif ;
     border-collapse: collapse;
@@ -143,7 +143,7 @@ a {
       background-color: #dddddd;
       white-space:nowrap;
 
-  }
+  }*/
 
 .push {
   transition: all 0.6s ease;
@@ -152,3 +152,17 @@ a {
   -ms-transition: all 0.6s ease;
   -o-transition: all 0.6s ease;
   z-index: 1; }
+
+.table-box {
+  display: inline-block;
+}
+
+.box{
+  border: 1px solid black;
+  margin: auto;
+  width:99%
+}
+
+th {
+  background-color: #e8e8e8
+}
