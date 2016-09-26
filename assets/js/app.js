@@ -54,14 +54,24 @@ function applyClick(){
       //console.log('Min coverage at index: ' + index + ' is: ' + minCoverage);
 
       if(minCoverage<minFilter){
-        var newData = [value[0],value[1],value[2],value[3],"FAIL"]
+        var newData = [value[0],value[1],value[2],value[3],"FAIL"];
+      //  data.row(index).eq(4).addClass('fail-highlight');
       }
       else{
-        var newData = [value[0],value[1],value[2],value[3],"PASS"]
+        var newData = [value[0],value[1],value[2],value[3],"PASS"];
       }
       data.row( index ).data( newData ).draw();
     });
   }
+}
+
+function clearClick(){
+  var data = genedatatable.rows().data();
+
+  data.each(function (value, index) {
+    var newData = [value[0],value[1],value[2],value[3],"-"];
+    data.row( index ).data( newData ).draw();
+  });
 }
 
 var genedatatable;
