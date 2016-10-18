@@ -10,8 +10,11 @@
     <script src="assets/js/jquery.1.11.1.min.js"></script>
     <script src="assets/js/handlebars-v2.0.0.min.js"></script>
     <script src="assets/js/bootstrap.min.js"></script>
-    <script src="assets/js/d3.min.js"></script>
+    <!--<script src="assets/js/d3.min.js"></script>-->
     <script src="assets/js/app.js"></script>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+<!--    <script src="https://d3js.org/d3.v4.js"></script>-->
+
 
     <!-- datatables-->
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jqc-1.12.3/dt-1.10.12/sc-1.4.2/se-1.2.0/datatables.min.css"/>
@@ -47,33 +50,7 @@
       </section>
     </div>
 
-    <!-- <div id="gene-summary" style='display:table'>
-      <div style='display:table-cell';width:50%'>
-        <table id = "gene-table-div">
-            <th>GENE</th>
-            <th>MEAN</th>
-            <th>SD</th>
-            <th>MIN</th>
-            <th>STATUS</th>
-          </tr>
-        </table>
-      </div>
-      <div style='display:table-cell';width:50%'>
-        <p>PUT PIE CHARTS HERE</p>
-      </div>
-
-    </div> -->
-
     <div class="box" style="margin-top: 75px">
-      <!--<div class="table-box" style="width: 50%">
-        <table class = "table table-hover table-condensed table-bordered" id = "gene-table-div">
-          <th>GENE</th>
-          <th>MEAN</th>
-          <th>SD</th>
-          <th>MIN</th>
-          <th>STATUS</th>
-        </table>
-      </div>-->
       <div class="inline-block" style="width: 50%">
         <table id = "gene-table-div" class="display">
         </table>
@@ -91,8 +68,9 @@
     </div>
 
 
-    <div id="test1" style="box">
-      <div id="gene-section">
+    <div class="box" style="margin-top: 5px">
+      <div id="scatterplot-div">
+        <p>testing</p>
       </div>
     </div>
 

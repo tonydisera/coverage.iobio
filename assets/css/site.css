@@ -166,3 +166,17 @@ a {
 th {
   background-color: #e8e8e8
 }
+
+td.pass-highlight {
+        font-weight: bold;
+        color: green;
+}
+
+td.fail-highlight {
+        font-weight: bold;
+        color: red;
+}
+
+.warning {
+    background-color: #F99 !important;
+}

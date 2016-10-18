@@ -2,8 +2,9 @@
 //<script type="text/javascript">
 //      "use strict";
 
+//Initialization data for Al's box and whisker plots
 // Define an svg for the genes and the exons within a gene.
-var h = 300;
+/*var h = 300;
 var w = 500;
 var padding = 25;
 
@@ -12,7 +13,7 @@ var geneSvg = new chart("gene");
 var exonSvg = new chart("exon");
 var dataset = [];
 var newData = [
-  "#id\tregion\tmin max q1\tmedian\tq3\tmean\tsd",
+  "#id\tregion\tmin\tmax\tq1\tmedian\tq3\tmean\tsd",
 "1\t10:90694980-90695123\t24\t42\t28\t36\t38\t34.4615\t5.59941",
 "2\t10:90697818-90697999\t16\t36\t20\t24\t32\t25.7238\t5.97795",
 "3\t10:90699264-90699455\t10\t29\t16\t23\t26\t21.2356\t5.66166",
@@ -26,7 +27,8 @@ var newData = [
 
 var geneData = [];
 var exonData = [];
-var dataId   = 0;
+var dataId   = 0;*/
+
 
 /*function updateGeneTable(geneData){
   var currGene = geneData[geneData.length - 1];
@@ -38,11 +40,26 @@ var dataId   = 0;
       '</td></tr>');
 }*/
 
-function updateGeneTable(genedatatable,geneData){
+//add new gene to gene table
+//to work with Al's "stats" data structure
+/*function updateGeneTable(genedatatable,geneData){
   var currGene = geneData[geneData.length - 1];
   genedatatable.row.add([currGene.name, currGene.mean, currGene.sd, currGene.min]).draw();
-}
+}*/
 
+
+/*
+function highlightStatus(){
+  genedatatable.rows().every( function ( rowIdx, tableLoop, rowLoop ) {
+      var cell = table.cell({ row: rowIdx, column: 0 }).node();
+      $(cell).addClass('warning');
+  });
+}*/
+
+
+var genedatatable;
+
+//apply min coverage filter to gene table
 function applyClick(){
   var minFilter = document.getElementById("minCoverageField").value;
 
@@ -51,11 +68,9 @@ function applyClick(){
 
     data.each(function (value, index) {
       var minCoverage=value[3];
-      //console.log('Min coverage at index: ' + index + ' is: ' + minCoverage);
 
       if(minCoverage<minFilter){
         var newData = [value[0],value[1],value[2],value[3],"FAIL"];
-      //  data.row(index).eq(4).addClass('fail-highlight');
       }
       else{
         var newData = [value[0],value[1],value[2],value[3],"PASS"];
@@ -65,6 +80,7 @@ function applyClick(){
   }
 }
 
+//clear pass/fail status from gene table
 function clearClick(){
   var data = genedatatable.rows().data();
 
@@ -74,15 +90,193 @@ function clearClick(){
   });
 }
 
-var genedatatable;
+//add new gene to gene table
+function updateGeneTable(genedatatable,currGene){
+  genedatatable.row.add([currGene[0].gene, currGene[0].mean, currGene[0].sd, currGene[0].min]).draw();
+}
+//parse gene data from individual and send data to geneContainer object
+function parseSubjectData(file,subjectData){
+  d3.tsv(file, function(data) {
+    geneCounter=1;
+    data.forEach(function(d) {
+        subjectData.addData(d);
+        dataset.push([geneCounter,parseInt(d.min)]);
+        geneCounter++;
+      });
+  });
+}
+
+//number of subjects to plot, 3 means dealing with trio, etc.
+var numSamples=3;
+
+//object to hold parsed gene data from different individuals
+function geneContainer(){
+  //object like python dictionary
+  this.geneDict={};
+  drawplot();
+
+  //add data to geneDict
+  this.addData = function(d){
+    //there's already an key for this gene in the dictionary, add this min to value of key-val pair
+    if(d.gene in this.geneDict){
+      var tempVal = this.geneDict[d.gene];
+      tempVal.push(d);
+      this.geneDict[d.gene]=tempVal;
+
+      //we have gene data from all subjects, so need to drawn on scatterplot
+      if(tempVal.length==numSamples){
+        //send gene to table
+        updateGeneTable(genedatatable,this.geneDict[d.gene]);
+
+        //send full gene to be drawn
+
+        drawplot();
+      }
+    }
+    //create key for gene in dictionary
+    else{
+      this.geneDict[d.gene]=[d];
+    }
+  };
+}
+
+var dataset = [];
+var geneCounter=1;
+
+function drawplot(kind){
+  //Width and height
+  var w = 500;
+  var h = 300;
+  var padding = 30;
+
+  //Create scale functions
+  var xScale = d3.scale.linear()
+  //var xScale = d3.scaleLinear()
+             .domain([0, d3.max(dataset, function(d) { return d[0]; })])
+             .range([padding, w - padding * 2]);
+
+  var yScale = d3.scale.linear()
+  //var yScale = d3.scaleLinear()
+             .domain([0, d3.max(dataset, function(d) { return d[1]; })])
+             .range([h - padding, padding]);
+
+  var rScale = d3.scale.linear()
+  //var rScale = d3.scaleLinear()
+             .domain([0, d3.max(dataset, function(d) { return d[1]; })])
+             .range([2, 5]);
+
+  //Define X axis
+  var xAxis = d3.svg.axis()
+  //var xAxis = d3.axisBottom()
+            .scale(xScale)
+            .orient("bottom")
+            .ticks(5);
+
+  //Define Y axis
+  var yAxis = d3.svg.axis()
+  //var yAxis = d3.axisLeft()
+            .scale(yScale)
+            .orient("left")
+            .ticks(5);
+
+//.data([0]) will only create one svg
+  var svg = d3.select("#scatterplot-div").selectAll("svg").data([0]);
+
+  //Create SVG element
+  svg.enter()
+        .append("svg")
+        .attr("width", w)
+        .attr("height", h);
+
+  //Create circles
+  svg.selectAll("circle")
+     .data(dataset)
+     .enter()
+     .append("circle")
+     .attr("cx", function(d) {
+        return xScale(d[0]);
+     })
+     .attr("cy", function(d) {
+        return yScale(d[1]);
+     })
+     .attr("r", function(d) {
+        return rScale(d[1]);
+     });
+
+//.attr("class", function(d){
+  //return d[3];
+//})
+//css file .proband add stroke of different color
+//on mouseover show gene name
+
+  //Create labels
+  svg.selectAll("text")
+     .data(dataset)
+     .enter()
+     .append("text")
+     .text(function(d) {
+        return d[0] + "," + d[1];
+     })
+     .attr("x", function(d) {
+        return xScale(d[0]);
+     })
+     .attr("y", function(d) {
+        return yScale(d[1]);
+     })
+     .attr("font-family", "sans-serif")
+     .attr("font-size", "11px")
+     .attr("fill", "red");
+
+  //Create X axis
+  /*
+  var axisEnter = svg.selectAll("g.x.axis").data([0]).enter().append('g');
+     if (geneD3_showXAxis) {
+       axisEnter.attr("class", "x axis")
+                .attr("transform",   "translate(" + margin.left + "," + "0" + ")");
+       svg.selectAll("g.x.axis").attr("transform",   "translate(" + margin.left + "," + "0" + ")");
+     }
+  */
+  //svg.append("g")
+  var axisEnter = svg.selectAll("g.x.axis").data([0]).enter().append('g')
+    axisEnter.attr("class", "x axis")
+    .attr("transform", "translate(0," + (h - padding) + ")")
+    .call(xAxis);
+
+  //Create Y axis
+  //svg.append("g")
+//  svg.selectAll("g.y.axis").data([0]).enter().append('g');
+  svg.append("g")
+    .attr("class", "y axis")
+    .attr("transform", "translate(" + padding + ",0)")
+    .call(yAxis);
+
+  //update scatter plot
+  svg.selectAll("circle")
+     .data(dataset)
+     //.enter()
+     .append("circle")
+     .attr("cx", function(d) {
+        return xScale(d[0]);
+     })
+     .attr("cy", function(d) {
+        return yScale(d[1]);
+     })
+     .attr("r", function(d) {
+        return rScale(d[1]);
+     });
+
+}
 
 $(document).ready(function() {
 
-  //$('#gene-table').DataTable();
       // Trim the first line from the data.
-      newData.shift();
+      //newData.shift();
 
+      //initialize DataTables table
       genedatatable = $('#gene-table-div').DataTable( {
+        "scrollY":        "300px",
+        "scrollCollapse": true,
+        "paging":         false,
         "columnDefs": [{
             "defaultContent": "-",
             "targets": "_all"
@@ -97,11 +291,37 @@ $(document).ready(function() {
       });
 
 
+      var subjectData = new geneContainer();
+
+      var probandFile="file:///Users/ryan/Dropbox/Marth_rotation/coverage.iobio/assets/data/15-0027099.txt";
+      parseSubjectData(probandFile,subjectData);
+
+      var parentOneFile="file:///Users/ryan/Dropbox/Marth_rotation/coverage.iobio/assets/data/15-0027100.txt";
+      parseSubjectData(parentOneFile,subjectData);
+
+      var parentTwoFile="file:///Users/ryan/Dropbox/Marth_rotation/coverage.iobio/assets/data/15-0027101.txt";
+      parseSubjectData(parentTwoFile,subjectData);
+
+      //var myScatterplot = document.getElementById("scatterplot-div");
+      //myScatterplot.onload = drawplot();
+
+      //drawplot(); this doesn't work because works asynchronously --> the files haven't finished loading yet
+      var breakpoint=1;
+    //console.log(dataset);
+      /*$(function(){
+        drawplot();
+      });*/
+
+});
+//      updateGeneTable(genedatatable,geneData);
+
+
+      //code to draw Al's box and whisker plots
       // Get all exon and gene level stats.
 
       //geneData.push(getGeneData(newData, dataId, "ACTA2"));
       //exonData.push(getExonData(newData, dataId, "ACTA2"));
-      geneData.push(getGeneData(newData, dataId));
+      /*geneData.push(getGeneData(newData, dataId));
       exonData.push(getExonData(newData, dataId));
       console.log("TEST", exonData);
       exonData[dataId].push(geneData[dataId]);
@@ -198,6 +418,7 @@ $(document).ready(function() {
         updateGeneTable(genedatatable,geneData);
         drawGene(geneSvg, geneData)
       }, 2000);
+
 });
 
 
@@ -552,6 +773,6 @@ function drawExons(id) {
   drawBox(exonSvg, exonData[id], 1, "exon");
   drawBox(exonSvg, geneData, 0.3, "gene", w - 3 * padding);
 }
-
+*/
 
 //</script>
