@@ -181,7 +181,7 @@ function drawplot(){
           div.transition()
                .duration(200)
                .style("opacity", .9);
-          div.html("GENE: "+d[2]["gene"]+"<br/>"+
+          div.html("Gene: "+d[2]["gene"]+"<br/>"+
                 "Subject: "+d[2]["subjectType"]+"<br/>"+
                 "Min: "+d[2]["min"]+"<br/>"+
                 "Mean: "+d[2]["mean"]+"<br/>"+
