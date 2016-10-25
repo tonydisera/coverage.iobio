@@ -1,63 +1,11 @@
 
-//<script type="text/javascript">
-//      "use strict";
-
-//Initialization data for Al's box and whisker plots
-// Define an svg for the genes and the exons within a gene.
-/*var h = 300;
-var w = 500;
-var padding = 25;
-
-
-var geneSvg = new chart("gene");
-var exonSvg = new chart("exon");
-var dataset = [];
-var newData = [
-  "#id\tregion\tmin\tmax\tq1\tmedian\tq3\tmean\tsd",
-"1\t10:90694980-90695123\t24\t42\t28\t36\t38\t34.4615\t5.59941",
-"2\t10:90697818-90697999\t16\t36\t20\t24\t32\t25.7238\t5.97795",
-"3\t10:90699264-90699455\t10\t29\t16\t23\t26\t21.2356\t5.66166",
-"4\t10:90700986-90701147\t17\t27\t22\t23\t24\t22.8447\t2.23623",
-"5\t10:90701542-90701626\t14\t19\t15\t17\t18\t16.8333\t1.72401",
-"6\t10:90703554-90703664\t21\t44\t27\t33\t38\t32.9182\t6.60596",
-"7\t10:90707015-90707143\t16\t27\t19\t22.5\t25\t21.7188\t3.21116",
-"8\t10:90708559-90708687\t14\t34\t17.5\t20\t28\t22.3047\t5.90757",
-"gene\tGENE1\t10\t44\t19\t24\t28\t24.8561\t7.29064"
-];
-
-var geneData = [];
-var exonData = [];
-var dataId   = 0;*/
-
-
-/*function updateGeneTable(geneData){
-  var currGene = geneData[geneData.length - 1];
-  $('#gene-table tr:last').after('<tr><td>'+currGene.name+
-    '</td><td>'+currGene.mean+
-      '<td>'+currGene.sd+
-      '<td>'+currGene.min+
-      '<td>'+'NA'+
-      '</td></tr>');
-}*/
-
-//add new gene to gene table
-//to work with Al's "stats" data structure
-/*function updateGeneTable(genedatatable,geneData){
-  var currGene = geneData[geneData.length - 1];
-  genedatatable.row.add([currGene.name, currGene.mean, currGene.sd, currGene.min]).draw();
-}*/
-
-
-/*
-function highlightStatus(){
-  genedatatable.rows().every( function ( rowIdx, tableLoop, rowLoop ) {
-      var cell = table.cell({ row: rowIdx, column: 0 }).node();
-      $(cell).addClass('warning');
-  });
-}*/
-
-
 var genedatatable;
+//number of subjects to plot, 3 means dealing with trio, etc.
+var numSamples=3;
+//dataset[0]=placeholder value for scatterplot xaxis; dataset[1]=min coverage for gene of individual
+var dataset = [];
+//counter to keep track of dataset[0]
+var geneCounter=1;
 
 //apply min coverage filter to gene table
 function applyClick(){
@@ -92,95 +40,119 @@ function clearClick(){
 
 //add new gene to gene table
 function updateGeneTable(genedatatable,currGene){
-  genedatatable.row.add([currGene[0].gene, currGene[0].mean, currGene[0].sd, currGene[0].min]).draw();
-}
-//parse gene data from individual and send data to geneContainer object
-function parseSubjectData(file,subjectData){
-  d3.tsv(file, function(data) {
-    geneCounter=1;
-    data.forEach(function(d) {
-        subjectData.addData(d);
-        dataset.push([geneCounter,parseInt(d.min)]);
-        geneCounter++;
-      });
-  });
+  genedatatable.row.add([currGene["proband"].gene, currGene["proband"].mean,
+    currGene["proband"].sd, currGene["proband"].min]).draw();
 }
 
-//number of subjects to plot, 3 means dealing with trio, etc.
-var numSamples=3;
+//var atestContainer = [];
+//parse gene data from individual and send data to geneContainer object
+var fileCounter=0;
+function parseSubjectData(file,subjectData,subjectType){
+  d3.tsv(file, function(data) {
+    fileCounter++;
+    geneCounter=1;
+    data.forEach(function(d) {
+        subjectData.addData(d,subjectType);
+        d["xaxis"]=geneCounter;
+        d["subjectType"]=subjectType
+        //dataset.push([geneCounter,parseInt(d.min),d]);
+      //  atestContainer.push(d);
+        geneCounter++;
+      });
+    if(fileCounter==numSamples){
+      //trioArray - each row contains all subject's data for one gene
+      var trioArray=[];
+      for(gene in subjectData.geneDict){
+        var trio = subjectData.geneDict[gene];
+        trioArray.push(trio);
+      }
+      //order trioArray based on proband's min
+      trioArray.sort(function(a,b){
+        return a["proband"]["min"]-b["proband"]["min"];
+      })
+      var rowCounter=0;
+      //push gene info for each individual to separate row in dataset
+      trioArray.forEach(function(trio){
+        rowCounter++;
+        dataset.push([rowCounter,trio.proband.min,trio.proband]);
+        dataset.push([rowCounter,trio.mom.min,trio.mom]);
+        dataset.push([rowCounter,trio.dad.min,trio.dad]);
+      })
+      drawplot();
+    }
+  });
+}
 
 //object to hold parsed gene data from different individuals
 function geneContainer(){
   //object like python dictionary
   this.geneDict={};
-  drawplot();
+  //drawplot();
 
   //add data to geneDict
-  this.addData = function(d){
+  this.addData = function(d,subjectType){
     //there's already an key for this gene in the dictionary, add this min to value of key-val pair
     if(d.gene in this.geneDict){
       var tempVal = this.geneDict[d.gene];
-      tempVal.push(d);
+      tempVal[subjectType]=d;
       this.geneDict[d.gene]=tempVal;
 
+      var sizeArray = parseInt(Object.keys(tempVal).length);
+
       //we have gene data from all subjects, so need to drawn on scatterplot
-      if(tempVal.length==numSamples){
+      if(sizeArray==numSamples){
         //send gene to table
         updateGeneTable(genedatatable,this.geneDict[d.gene]);
-
-        //send full gene to be drawn
-
-        drawplot();
       }
     }
     //create key for gene in dictionary
     else{
-      this.geneDict[d.gene]=[d];
+      var tempInitVal = [];
+      tempInitVal[subjectType]=d;
+      this.geneDict[d.gene]=tempInitVal;
     }
   };
 }
 
-var dataset = [];
-var geneCounter=1;
-
-function drawplot(kind){
+function drawplot(){
   //Width and height
-  var w = 500;
-  var h = 300;
+  var w = 1300;
+  var h = 500;
   var padding = 30;
 
   //Create scale functions
   var xScale = d3.scale.linear()
-  //var xScale = d3.scaleLinear()
              .domain([0, d3.max(dataset, function(d) { return d[0]; })])
              .range([padding, w - padding * 2]);
 
   var yScale = d3.scale.linear()
-  //var yScale = d3.scaleLinear()
              .domain([0, d3.max(dataset, function(d) { return d[1]; })])
              .range([h - padding, padding]);
 
   var rScale = d3.scale.linear()
-  //var rScale = d3.scaleLinear()
              .domain([0, d3.max(dataset, function(d) { return d[1]; })])
              .range([2, 5]);
 
   //Define X axis
   var xAxis = d3.svg.axis()
-  //var xAxis = d3.axisBottom()
             .scale(xScale)
             .orient("bottom")
             .ticks(5);
 
   //Define Y axis
   var yAxis = d3.svg.axis()
-  //var yAxis = d3.axisLeft()
             .scale(yScale)
             .orient("left")
             .ticks(5);
 
-//.data([0]) will only create one svg
+  //.data([0]) will only create one svg
   var svg = d3.select("#scatterplot-div").selectAll("svg").data([0]);
+
+  // Define the div for the tooltip
+  var div = d3.select("#scatterplot-div").append("div")
+      .attr("class", "tooltip")
+      .style("opacity", 0);
+
 
   //Create SVG element
   svg.enter()
@@ -200,78 +172,44 @@ function drawplot(kind){
         return yScale(d[1]);
      })
      .attr("r", function(d) {
-        return rScale(d[1]);
-     });
-
-//.attr("class", function(d){
-  //return d[3];
-//})
-//css file .proband add stroke of different color
-//on mouseover show gene name
-
-  //Create labels
-  svg.selectAll("text")
-     .data(dataset)
-     .enter()
-     .append("text")
-     .text(function(d) {
-        return d[0] + "," + d[1];
+        return 3.5;
      })
-     .attr("x", function(d) {
-        return xScale(d[0]);
+     .attr("class", function(d){
+       return d[2]["subjectType"];
      })
-     .attr("y", function(d) {
-        return yScale(d[1]);
-     })
-     .attr("font-family", "sans-serif")
-     .attr("font-size", "11px")
-     .attr("fill", "red");
+     .on("mouseover", function(d) {
+          div.transition()
+               .duration(200)
+               .style("opacity", .9);
+          div.html("GENE: "+d[2]["gene"]+"<br/>"+
+                "Subject: "+d[2]["subjectType"]+"<br/>"+
+                "Min: "+d[2]["min"]+"<br/>"+
+                "Mean: "+d[2]["mean"]+"<br/>"+
+                "Max: "+d[2]["max"]+"<br/>"+
+                "SD: "+d[2]["sd"]+"<br/>")
+               .style("left", (d3.event.pageX + 5) + "px")
+               .style("top", (d3.event.pageY - 28) + "px");
+      })
+      .on("mouseout", function(d) {
+          div.transition()
+               .duration(500)
+               .style("opacity", 0);
+      });
 
-  //Create X axis
-  /*
-  var axisEnter = svg.selectAll("g.x.axis").data([0]).enter().append('g');
-     if (geneD3_showXAxis) {
-       axisEnter.attr("class", "x axis")
-                .attr("transform",   "translate(" + margin.left + "," + "0" + ")");
-       svg.selectAll("g.x.axis").attr("transform",   "translate(" + margin.left + "," + "0" + ")");
-     }
-  */
-  //svg.append("g")
+
   var axisEnter = svg.selectAll("g.x.axis").data([0]).enter().append('g')
     axisEnter.attr("class", "x axis")
     .attr("transform", "translate(0," + (h - padding) + ")")
     .call(xAxis);
 
   //Create Y axis
-  //svg.append("g")
-//  svg.selectAll("g.y.axis").data([0]).enter().append('g');
   svg.append("g")
     .attr("class", "y axis")
     .attr("transform", "translate(" + padding + ",0)")
     .call(yAxis);
-
-  //update scatter plot
-  svg.selectAll("circle")
-     .data(dataset)
-     //.enter()
-     .append("circle")
-     .attr("cx", function(d) {
-        return xScale(d[0]);
-     })
-     .attr("cy", function(d) {
-        return yScale(d[1]);
-     })
-     .attr("r", function(d) {
-        return rScale(d[1]);
-     });
-
 }
 
 $(document).ready(function() {
-
-      // Trim the first line from the data.
-      //newData.shift();
-
       //initialize DataTables table
       genedatatable = $('#gene-table-div').DataTable( {
         "scrollY":        "300px",
@@ -290,489 +228,15 @@ $(document).ready(function() {
         ]
       });
 
-
       var subjectData = new geneContainer();
 
       var probandFile="file:///Users/ryan/Dropbox/Marth_rotation/coverage.iobio/assets/data/15-0027099.txt";
-      parseSubjectData(probandFile,subjectData);
+      parseSubjectData(probandFile,subjectData,"proband");
 
       var parentOneFile="file:///Users/ryan/Dropbox/Marth_rotation/coverage.iobio/assets/data/15-0027100.txt";
-      parseSubjectData(parentOneFile,subjectData);
+      parseSubjectData(parentOneFile,subjectData,"mom");
 
       var parentTwoFile="file:///Users/ryan/Dropbox/Marth_rotation/coverage.iobio/assets/data/15-0027101.txt";
-      parseSubjectData(parentTwoFile,subjectData);
-
-      //var myScatterplot = document.getElementById("scatterplot-div");
-      //myScatterplot.onload = drawplot();
-
-      //drawplot(); this doesn't work because works asynchronously --> the files haven't finished loading yet
-      var breakpoint=1;
-    //console.log(dataset);
-      /*$(function(){
-        drawplot();
-      });*/
+      parseSubjectData(parentTwoFile,subjectData,"dad");
 
 });
-//      updateGeneTable(genedatatable,geneData);
-
-
-      //code to draw Al's box and whisker plots
-      // Get all exon and gene level stats.
-
-      //geneData.push(getGeneData(newData, dataId, "ACTA2"));
-      //exonData.push(getExonData(newData, dataId, "ACTA2"));
-      /*geneData.push(getGeneData(newData, dataId));
-      exonData.push(getExonData(newData, dataId));
-      console.log("TEST", exonData);
-      exonData[dataId].push(geneData[dataId]);
-      console.log("TEST", exonData);
-
-      updateGeneTable(genedatatable,geneData);
-
-      // Set initial scales.
-      geneSvg.xScale = setScale(0, geneData.length, 0, w);
-      geneSvg.yScale = setScale(0, d3.max(geneData, function(d) {return d.max;}), h - padding, padding);
-      exonSvg.xScale = setScale(0, exonData[0].length + 1, 0, w - padding);
-      exonSvg.yScale = setScale(0, d3.max(exonData[0], function(d) {return d.max;}), h - padding, padding);
-
-      // Define axes.
-      geneSvg.xAxis  = setAxis(geneSvg.xScale, "bottom");
-      geneSvg.yAxis  = setAxis(geneSvg.yScale, "left");
-      exonSvg.xAxis  = setAxis(exonSvg.xScale, "bottom");
-      exonSvg.yAxis  = setAxis(exonSvg.yScale, "left");
-
-      // Translate axes.
-      var translate = "translate(" + padding + "," + (h - padding) + ")";
-      geneSvg.svg.append("g")
-         .attr("class", "xaxis")
-         .attr("transform", translate)
-         .call(geneSvg.xAxis);
-      translate = "translate(" + padding + ", 0)";
-      geneSvg.svg.append("g")
-         .attr("class", "yaxis")
-         .attr("transform", translate)
-         .call(geneSvg.yAxis);
-
-      translate = "translate(" + padding + "," + (h - padding) + ")";
-      exonSvg.svg.append("g")
-         .attr("class", "xaxis")
-         .attr("transform", translate)
-         .call(exonSvg.xAxis);
-      translate = "translate(" + padding + ", 0)";
-      exonSvg.svg.append("g")
-         .attr("class", "yaxis")
-         .attr("transform", translate)
-         .call(exonSvg.yAxis);
-
-      drawGene(geneSvg, geneData);
-      drawExons(dataId);
-
-      // New datasets
-      newData = [
-        "#id\tregion\tmin\tmax\tq1\tmedian\tq3\tmean\tsd",
-        "1\t15:35082613-35082756\t14\t24\t16\t19\t22\t19.035\t3.14768",
-        "2\t15:35083315-35083496\t24\t40\t28\t32\t35\t31.884\t4.12147",
-        "3\t15:35084291-35084482\t24\t34\t27\t28\t30\t28.2094\t2.29685",
-        "4\t15:35084609-35084770\t17\t34\t19\t23\t28.25\t23.6398\t4.92875",
-        "5\t15:35085446-35085770\t26\t37\t31\t33\t34\t32.1327\t2.33947",
-        "6\t15:35086881-35087009\t13\t24\t15\t18\t20\t17.8203\t2.60238",
-        "gene\tACTC1\t13\t40\t21\t28\t32\t26.9317\t6.44492"
-      ];
-      setTimeout(function() {
-        newData.shift();
-        dataId++;
-        //geneData.push(getGeneData(newData, dataId, 'ACTC1'));
-        //exonData.push(getExonData(newData, dataId, 'ACTC1'));
-        geneData.push(getGeneData(newData, dataId));
-        exonData.push(getExonData(newData, dataId));
-        updateGeneTable(genedatatable,geneData);
-        drawGene(geneSvg, geneData)
-      }, 1000);
-
-      setTimeout(function() {
-        newData = [
-          "#id\tregion\tmin\tmax\tq1\tmedian\tq3\tmean\tsd",
-          "1\t5:112090588-112090722\t14\t25\t16\t18.5\t20\t19.0299\t3.25517",
-          "2\t5:112102023-112102107\t11\t15\t12\t12\t13\t12.619\t0.937382",
-          "3\t5:112102886-112103087\t18\t31\t21\t23\t29\t24.7811\t4.2158",
-          "4\t5:112111326-112111434\t12\t21\t15\t16\t18\t16.5926\t2.03687",
-          "5\t5:112116487-112116600\t13\t19\t14\t15\t16\t15.3186\t1.75118",
-          "6\t5:112128143-112128226\t19\t29\t20\t21\t25\t22.253\t3.19956",
-          "7\t5:112136976-112137080\t16\t20\t17\t17\t18\t17.3077\t0.941326",
-          "8\t5:112151192-112151290\t13\t21\t18\t19\t19\t18.7857\t2.09591",
-          "9\t5:112154663-112155041\t9\t24\t13\t14\t17\t15.3228\t3.71492",
-          "10\t5:112157593-112157688\t17\t34\t20\t22\t31\t24.5684\t5.83032",
-          "11\t5:112162805-112162944\t14\t23\t16\t17\t20\t17.8849\t2.29507",
-          "12\t5:112163626-112163703\t21\t25\t22\t23\t24\t22.8701\t1.1549",
-          "13\t5:112164553-112164669\t20\t29\t25\t27\t28\t26.3362\t2.44577",
-          "14\t5:112170648-112170862\t14\t20\t16\t17\t17\t16.972\t1.42053",
-          "15\t5:112173250-112179823\t8\t52\t19\t23\t27\t24.0571\t7.18038",
-          "gene\tAPC\t8\t52\t18\t22\t26\t22.8706\t7.08069"
-      ];
-        newData.shift();
-        dataId++;
-        //geneData.push(getGeneData(newData, dataId, "APC"));
-        //exonData.push(getExonData(newData, dataId, "APC"));
-        geneData.push(getGeneData(newData, dataId, "APC"));
-        exonData.push(getExonData(newData, dataId, "APC"));
-        updateGeneTable(genedatatable,geneData);
-        drawGene(geneSvg, geneData)
-      }, 2000);
-
-});
-
-
-
-
-// Define an object to hold data.
-class stats {
-  constructor() {
-    this.id     = "";
-    this.name   = "";
-    this.chrom  = "";
-    this.start  = "";
-    this.end    = "";
-    this.min    = "";
-    this.max    = "";
-    this.q1     = "";
-    this.median = "";
-    this.q3     = "";
-    this.mean   = "";
-    this.sd     = "";
-  }
-}
-
-// Parse exon data from the dataset.
-function getExonData(dataset, id) {
-
-  // Define the data structure.
-  var exons = [];
-
-  // Loop over all exons and store info.
-  for (var i = 0; i < dataset.length - 1; i++) {
-    var s    = dataset[i].split("\t");
-    var exon = new stats;
-
-    // Get the chromosome.
-    var a = s[1].split(':');
-    exon.chrom = a[0];
-
-    // Start and end coordinates.
-    a = a[1].split("-");
-    exon.start = a[0];
-    exon.end   = a[1];
-
-    // Remaining data.
-    exon.min    = parseInt(s[2]);
-    exon.max    = parseInt(s[3]);
-    exon.q1     = parseFloat(s[4]);
-    exon.median = parseFloat(s[5]);
-    exon.q3     = parseFloat(s[6]);
-    exon.mean   = parseFloat(s[7]);
-    exon.sd     = parseFloat(s[8]);
-
-    // Store the exon data.
-    exons.push(exon);
-  };
-
-  exon.id   = id;
-  exon.name = name;
-
-  // Return the data.
-  return exons;
-};
-
-// Get the gene level statistics.
-//function getGeneData(dataset, id, name) {
-function getGeneData(dataset, id) {
-  var exon = new stats;
-
-  // Define the gene min and max by the first and last exons.
-  var s = (dataset[0].split("\t")[1]).split(":");
-  exon.chrom = s[0];
-  exon.start = s[1].split("-")[0];
-  exon.end   = ((dataset[dataset.length - 2]
-                  .split("\t")[1])
-                  .split(":")[1])
-                  .split("-")[1];
-
-  s = dataset[dataset.length - 1].split("\t");
-  exon.id     = id;
-  //exon.name   = name;
-  exon.name   = (dataset[dataset.length - 1].split("\t")[1])
-  exon.min    = parseInt(s[2]);
-  exon.max    = parseInt(s[3]);
-  exon.q1     = parseFloat(s[4]);
-  exon.median = parseFloat(s[5]);
-  exon.q3     = parseFloat(s[6]);
-  exon.mean   = parseFloat(s[7]);
-  exon.sd     = parseFloat(s[8]);
-
-  return exon;
-};
-
-// Define the functions to draw the box and whisker plots.
-function setScale(dMin, dMax, rMin, rMax) {
-  return d3.scale.linear().domain([dMin, dMax]).range([rMin, rMax]);
-}
-
-// Define axes.
-function setAxis(scale, position, ticks) {
-  return d3.svg.axis().scale(scale).orient(position).ticks(ticks);
-};
-
-
-
-function chart(x) {
-  this.h = h;
-  this.w = w;
-  this.padding = padding;
-
-  <!-- this is bad practice, try to use enum as input here -->
-  if(x == "gene"){
-    this.svg = d3.select("#gene-section").append("svg").attr("height", this.h).attr("width", this.w);
-  }
-  else if (x == "exon"){
-    this.svg = d3.select("#exon-section").append("svg").attr("height", this.h).attr("width", this.w);
-  }
-  else{
-    <!-- throw error -->
-  }
-  this.xScale;
-  this.yScale;
-  this.xAxis = d3.svg.axis();
-  this.yAxis;
-  this.boxWidth = 10;
-  this.geneBoxWidth = 10;
-}
-
-// Update scales
-function updateScales(chart) {
-  chart.svg.select(".xaxis")
-           .transition()
-           .duration(1000)
-           .ease("sin-in-out")
-           .call(chart.xAxis);
-  chart.svg.select(".yaxis")
-           .transition()
-           .duration(1000)
-           .ease("sin-in-out")
-           .call(chart.yAxis);
-};
-
-function drawBox(chart, dataset, opacity, classPrefix, boxWidth) {
-  if (boxWidth == undefined) {boxWidth = chart.boxWidth};
-  var box = chart.svg.selectAll("." + classPrefix + "box").data(dataset);
-  box.enter()
-     .append("rect")
-     .attr("class", classPrefix + "box")
-     .attr("x", w)
-     .attr("y", function(d) {return  chart.yScale(d.q3);})
-     .attr("fill", "none")
-     .attr("stroke", "blue")
-     .attr("height", function(d) {return chart.yScale(d.q1) - chart.yScale(d.q3);})
-     .attr("width", boxWidth)
-     .attr("opacity", opacity)
-     .on("mouseover", function(){d3.select(this).style("fill", "aliceblue");})
-     .on("mouseout", function(){d3.select(this).style("fill", "white");})
-     .on("mousedown", selectGene)
-     .transition()
-     .duration(1000)
-     .attr("x", function(d, i) {return chart.xScale(i) + 2 * chart.padding;})
-     .attr("y", function(d) {return  chart.yScale(d.q3);});
-
-  var moBox = chart.svg.selectAll("." + classPrefix + "box").data(dataset);
-
-  box.transition()
-     .duration(1000)
-     .attr("x", function(d, i) {return chart.xScale(i) + 2 * chart.padding;})
-     .attr("y", function(d) {return  chart.yScale(d.q3);})
-     .attr("height", function(d) {return chart.yScale(d.q1) - chart.yScale(d.q3);})
-     .attr("width", boxWidth);
-
-  box.exit().remove();
-
-  // Add median line.
-  var med = chart.svg.selectAll("." + classPrefix + "med").data(dataset);
-  med.enter()
-     .append("line")
-     .attr("class", classPrefix + "med")
-     .attr("x1", w)
-     .attr("x2", w)
-     .attr("y1", function(d) {return chart.yScale(d.median);})
-     .attr("y2", function(d) {return chart.yScale(d.median);})
-     .attr("stroke", "blue")
-     .attr("opacity", opacity)
-     .transition()
-     .duration(1000)
-     .attr("x1", function(d, i) {return chart.xScale(i) + 2 * chart.padding;})
-     .attr("x2", function(d, i) {return chart.xScale(i) + 2 * chart.padding + chart.boxWidth;})
-     .attr("y1", function(d) {return chart.yScale(d.median);})
-     .attr("y2", function(d) {return chart.yScale(d.median);});
-
-  med.transition()
-     .duration(1000)
-     .attr("x1", function(d, i) {return chart.xScale(i) + 2 * chart.padding;})
-     .attr("x2", function(d, i) {return chart.xScale(i) + 2 * chart.padding + chart.boxWidth;})
-     .attr("y1", function(d) {return chart.yScale(d.median);})
-     .attr("y2", function(d) {return chart.yScale(d.median);});
-
-  med.exit().remove();
-
-  // Add whiskers.
-  var topWhisker = chart.svg.selectAll("." + classPrefix + "topWhisker").data(dataset);
-  topWhisker.enter()
-    .append("line")
-    .attr("class", classPrefix + "topWhisker")
-    .attr("x1", w + chart.boxWidth / 2)
-    .attr("x2", w + chart.boxWidth / 2)
-    .attr("y1", function(d) {return chart.yScale(d.max);})
-    .attr("y2", function(d) {return chart.yScale(d.q3);})
-    .attr("stroke", "blue")
-    .style("stroke-dasharray", ("2, 2"))
-     .attr("opacity", opacity)
-    .transition()
-    .duration(1000)
-    .attr("x1", function(d, i) {return chart.xScale(i) + 2 * chart.padding + chart.boxWidth / 2;})
-    .attr("x2", function(d, i) {return chart.xScale(i) + 2 * chart.padding + chart.boxWidth / 2;})
-    .attr("y1", function(d) {return chart.yScale(d.max);})
-    .attr("y2", function(d) {return chart.yScale(d.q3);});
-
-  topWhisker.transition()
-    .duration(1000)
-    .attr("x1", function(d, i) {return chart.xScale(i) + 2 * chart.padding + chart.boxWidth / 2;})
-    .attr("x2", function(d, i) {return chart.xScale(i) + 2 * chart.padding + chart.boxWidth / 2;})
-    .attr("y1", function(d) {return chart.yScale(d.max);})
-    .attr("y2", function(d) {return chart.yScale(d.q3);});
-
-  topWhisker.exit().remove();
-
-  var topLine = chart.svg.selectAll("." + classPrefix + "topLine").data(dataset);
-  topLine.enter()
-    .append("line")
-    .attr("class", classPrefix + "topLine")
-    .attr("x1", w)
-    .attr("x2", w + chart.boxWidth)
-    .attr("y1", function(d) {return chart.yScale(d.max);})
-    .attr("y2", function(d) {return chart.yScale(d.max);})
-    .attr("stroke", "blue")
-     .attr("opacity", opacity)
-    .transition()
-    .duration(1000)
-    .attr("x1", function(d, i) {return chart.xScale(i) + 2 * chart.padding;})
-    .attr("x2", function(d, i) {return chart.xScale(i) + 2 * chart.padding + chart.boxWidth;})
-    .attr("y1", function(d) {return chart.yScale(d.max);})
-    .attr("y2", function(d) {return chart.yScale(d.max);});
-
-  topLine.transition()
-    .duration(1000)
-    .attr("x1", function(d, i) {return chart.xScale(i) + 2 * chart.padding;})
-    .attr("x2", function(d, i) {return chart.xScale(i) + 2 * chart.padding + chart.boxWidth;})
-    .attr("y1", function(d) {return chart.yScale(d.max);})
-    .attr("y2", function(d) {return chart.yScale(d.max);})
-    .attr("stroke", "blue");
-
-  topLine.exit().remove();
-
-  var bottomWhisker = chart.svg.selectAll("." + classPrefix + "bottomWhisker").data(dataset);
-  bottomWhisker.enter()
-    .append("line")
-    .attr("class", classPrefix + "bottomWhisker")
-    .attr("x1", w + chart.boxWidth / 2)
-    .attr("x2", w + chart.boxWidth / 2)
-    .attr("y1", function(d) {return chart.yScale(d.q1);})
-    .attr("y2", function(d) {return chart.yScale(d.min);})
-    .attr("stroke", "blue")
-    .style("stroke-dasharray", ("2, 2"))
-     .attr("opacity", opacity)
-    .transition()
-    .duration(1000)
-    .attr("x1", function(d, i) {return chart.xScale(i) + 2 * chart.padding + chart.boxWidth / 2;})
-    .attr("x2", function(d, i) {return chart.xScale(i) + 2 * chart.padding + chart.boxWidth / 2;})
-    .attr("y1", function(d) {return chart.yScale(d.q1);})
-    .attr("y2", function(d) {return chart.yScale(d.min);});
-
-  bottomWhisker.transition()
-    .duration(1000)
-    .attr("x1", function(d, i) {return chart.xScale(i) + 2 * chart.padding + chart.boxWidth / 2;})
-    .attr("x2", function(d, i) {return chart.xScale(i) + 2 * chart.padding + chart.boxWidth / 2;})
-    .attr("y1", function(d) {return chart.yScale(d.q1);})
-    .attr("y2", function(d) {return chart.yScale(d.min);});
-
-  bottomWhisker.exit().remove();
-
-  var bottomLine = chart.svg.selectAll("." + classPrefix + "bottomLine").data(dataset);
-  bottomLine.enter()
-    .append("line")
-    .attr("class", classPrefix + "bottomLine")
-    .attr("x1", w)
-    .attr("x2", w + chart.boxWidth)
-    .attr("y1", function(d) {return chart.yScale(d.min);})
-    .attr("y2", function(d) {return chart.yScale(d.min);})
-    .attr("stroke", "blue")
-     .attr("opacity", opacity)
-    .transition()
-    .duration(1000)
-    .attr("x1", function(d, i) {return chart.xScale(i) + 2 * chart.padding;})
-    .attr("x2", function(d, i) {return chart.xScale(i) + 2 * chart.padding + chart.boxWidth;})
-    .attr("y1", function(d) {return chart.yScale(d.min);})
-    .attr("y2", function(d) {return chart.yScale(d.min);});
-
-  bottomLine.transition()
-    .duration(1000)
-    .attr("x1", function(d, i) {return chart.xScale(i) + 2 * chart.padding;})
-    .attr("x2", function(d, i) {return chart.xScale(i) + 2 * chart.padding + chart.boxWidth;})
-    .attr("y1", function(d) {return chart.yScale(d.min);})
-    .attr("y2", function(d) {return chart.yScale(d.min);})
-    .attr("stroke", "blue");
-
-  bottomLine.exit().remove();
-};
-
-// Select a gene and update the exons chart.
-function selectGene(d) {
-  drawExons(d.id);
-  //window.alert("selected "+d.name);
-};
-
-// Draw the top level gene data.
-function drawGene(svg, dataset) {
-
-  // Define scales. The domain will be modified as more data comes in.
-  geneSvg.xScale = setScale(0, dataset.length, 0, w);
-  geneSvg.yScale = setScale(0, d3.max(dataset, function(d) {return d.max;}), h - padding, padding);
-
-  // Define axes.
-  geneSvg.xAxis = setAxis(geneSvg.xScale, "bottom");
-  geneSvg.yAxis = setAxis(geneSvg.yScale, "left");
-
-  // Set the box widths.
-  geneSvg.boxWidth = (w / geneData.length) - (3 * padding);
-
-  // Draw a box representing the mean and sd for the gene.
-  updateScales(geneSvg);
-  drawBox(geneSvg, geneData, 1, "gene");
-}
-
-// Draw the exons within a gene.
-function drawExons(id) {
-
-  // Define scales. The domain will be modified as more data comes in.
-  exonSvg.xScale = setScale(0, exonData[id].length, 0, w -  2 * padding);
-  exonSvg.yScale = setScale(0, d3.max(exonData[id], function(d) {return d.max;}), h - padding, padding);
-
-  // Define axes.
-  exonSvg.xAxis = setAxis(exonSvg.xScale, "bottom");
-  exonSvg.yAxis = setAxis(exonSvg.yScale, "left");
-
-  // Set the box widths.
-  exonSvg.boxWidth = (w / exonData[id].length) - (padding);
-
-  // Draw a box representing the mean and sd for the gene.
-  updateScales(exonSvg);
-  drawBox(exonSvg, exonData[id], 1, "exon");
-  drawBox(exonSvg, geneData, 0.3, "gene", w - 3 * padding);
-}
-*/
-
-//</script>

@@ -121,30 +121,6 @@ a {
     font-size: 11px;
   }
 
-/*  table {
-    table-layout: auto;
-    font-family: "Quattrocento Sans", sans-serif, sans-serif ;
-    border-collapse: collapse;
-    width: 100%;
-  }
-
-  td, th {
-      border: 1px solid #dddddd;
-      text-align: left;
-      padding: 8px;
-      white-space:nowrap;
-  }
-
-  table td.absorbing-column {
-      width: 100%;
-  }
-
-  tr:nth-child(even) {
-      background-color: #dddddd;
-      white-space:nowrap;
-
-  }*/
-
 .push {
   transition: all 0.6s ease;
   -webkit-transition: all 0.6s ease;
@@ -177,6 +153,41 @@ td.fail-highlight {
         color: red;
 }
 
-.warning {
-    background-color: #F99 !important;
+div.tooltip {
+  position: absolute;
+  text-align: left;
+  width: 100px;
+  height: 90px;
+  padding: 2px;
+  font: 12px sans-serif;
+  background: lightsteelblue;
+  border: 0px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.dot {
+  stroke: #000;
+}
+
+.proband{
+  fill: orange;
+}
+.mom{
+  fill: blue;
+}
+.dad{
+  fill: green;
+}
+
+/*takes off numbering for xaxis*/
+.x.axis .tick{
+  display: none;
 }
